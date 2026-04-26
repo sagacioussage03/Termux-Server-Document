@@ -9,10 +9,9 @@
 - [Hardware Specs](#-hardware-specs)
 - [Setup Chronology](#-setup-chronology)
 - [File System Architecture](#-file-system-architecture)
-- [Active Services & Management](#️-active-services--management)
+- [Active Services & Projects](#️-active-services--projects)
 - [Remote Access (SSH)](#-remote-access-ssh)
 - [Boot Automation](#-boot-automation-termuxboot)
-- [Project Synapse](#-project-synapse)
 
 ---
 
@@ -63,15 +62,92 @@
 | `~/storage/shared` → `/storage/emulated/0/`    | Shared storage (Android internal storage)                           |
 
 ---
+## 🎨 Ambient Visuals (The "Wall-Mount" Mode)
 
-## ⚙️ Active Services & Management
+To prevent AMOLED burn-in and maintain a "Cyberpunk" aesthetic, a rotation script is used to alternate between procedural art and system visuals.
+
+### Visual Configuration:
+- **Digital Forest:** `cbonsai -l -i -w 3`
+  - Procedural ASCII growth with a 3-second interval between generations.
+- **Matrix Rain:** `cmatrix -s -b`
+  - Bolded digital rain in screensaver mode.
+
+## 🔄 Process Control: The Cycle Logic
+
+- **Execution Strategy:** Backgrounding with PID tracking.
+- **Workflow:** 
+  - `cbonsai ... &`: Launches procedural art as a background task.
+  - `$!`: Captures the Process ID for targeted termination.
+  - `kill $PID`: Ensures clean exit of ncurses-based animations before the next cycle.
+- **Stability:** Using `sleep` instead of `timeout` to prevent IO-blocking and blank screens on Android 13/14.
+
+## ⚙️ Active Services & Projects
+
+This node hosts several foundational services and full-stack projects.
+
+### 🛠️ Core Utilities
 
 | Service               | Detail                                                                     |
 | --------------------- | -------------------------------------------------------------------------- |
 | **SSH Daemon**        | Started via `sshd` for remote PC access                                    |
-| **Python Environment** | Python 3.x initialized                                                   |
-| **Process Monitoring** | `btop` (root-enabled) for real-time per-core clock speed & thermal tracking |
-| **Power Management**  | ACCA (Advanced Charging Controller) — battery bypass at 60% charge for 24/7 longevity |
+| **Python Environment**| Python 3.x initialized                                                     |
+| **Process Monitoring**| `btop` (root-enabled). Path: `/data/data/com.termux/files/usr/bin/btop` (Type `su` first, then run absolute path) |
+| **Power Management**  | ACCA (Advanced Charging Controller) — battery bypass at 60% charge         |
+
+### 🐘 PostgreSQL Database Service
+
+Primary relational database service running locally on Xiaomi 11 Lite 5G NE via Termux.
+
+| Property | Value |
+| :--- | :--- |
+| **Engine** | PostgreSQL 18.2 (`aarch64-android`) |
+| **Host** | `127.0.0.1` |
+| **Port** | `5432` |
+| **User** | `u0_a21` |
+| **Data Path** | `/data/data/com.termux/files/usr/var/lib/postgresql` |
+
+**Service Management:**
+- **Start:** `pg_ctl -D $PREFIX/var/lib/postgresql start`
+- **Stop:** `pg_ctl -D $PREFIX/var/lib/postgresql stop`
+- **Status:** `pg_ctl -D $PREFIX/var/lib/postgresql status`
+
+> [!NOTE]
+> The service is bound to localhost for security. To access from a PC in the future, use an SSH tunnel on port `8022`.
+
+### 🦙 OLLAMA - Local LLM Server
+
+Local Large Language Model server running on the device.
+
+**Service Management:**
+- **Start:** 
+  ```bash
+  nohup env OLLAMA_HOST=0.0.0.0 ollama serve > ollama.log 2>&1 &
+  ```
+  *(Starts in the background and logs output to `ollama.log` in the current directory)*
+- **Stop:** `pkill ollama`
+- **Port:** `11434`
+
+### 🧠 Project Synapse
+
+**Project Synapse** is the primary *Smart Hub* application running on this node.
+
+| Aspect                  | Detail                                                              |
+| ----------------------- | ------------------------------------------------------------------- |
+| **Role**                | Headless "Jarvis"-style controller                                  |
+| **Stack**               | FastAPI backend + React (Vite) frontend                             |
+| **Hardware Integration**| `termux-api` for physical hardware interaction (vibration, TTS, sensors) |
+
+### 🌿 Dendrite-LLM
+
+A self-hosted LLM chat application built for **Android (Termux)**, powered by **Ollama** and **PostgreSQL**.
+
+| Layer    | Technology                                   |
+|----------|----------------------------------------------|
+| Frontend | React 19, Vite 6, Tailwind CSS v4            |
+| Backend  | Python 3.13, FastAPI, SQLAlchemy, httpx      |
+| Database | PostgreSQL                                   |
+| LLM      | Ollama (llama3.2:3b, configurable)           |
+| Platform | Android Termux (aarch64)                     |
 
 ---
 
@@ -126,24 +202,3 @@ Set up SSH keys to skip the password prompt on every connection. *(Guide TBD)*
 
 > [!TIP]
 > If multiple scripts exist in `~/.termux/boot/`, they execute in **sorted (alphabetical) order**.
-
----
-
-## 🧠 Project Synapse
-
-**Project Synapse** is the primary *Smart Hub* application running on this node.
-
-| Aspect                  | Detail                                                              |
-| ----------------------- | ------------------------------------------------------------------- |
-| **Role**                | Headless "Jarvis"-style controller                                  |
-| **Stack**               | FastAPI backend + React (Vite) frontend                             |
-| **Hardware Integration** | `termux-api` for physical hardware interaction (vibration, TTS, sensors) |
-
----
-
-<!-- 
-## 📝 Notes & TODO
-- [ ] Add SSH key setup guide
-- [ ] Document ACCA configuration in detail
-- [ ] Expand Project Synapse section as it develops
--->
