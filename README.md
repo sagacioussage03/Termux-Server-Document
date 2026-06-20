@@ -10,6 +10,7 @@
 - [Setup Chronology](#-setup-chronology)
 - [File System Architecture](#-file-system-architecture)
 - [Active Services & Projects](#️-active-services--projects)
+- [Scheduled Tasks (Cron Jobs)](#-scheduled-tasks-cron-jobs)
 - [Remote Access (SSH)](#-remote-access-ssh)
 - [Boot Automation](#-boot-automation-termuxboot)
 
@@ -60,6 +61,7 @@
 | `~/` (`/data/data/com.termux/files/home`)       | User home (`$HOME`)                                                 |
 | `/data/data/com.termux/files/usr/`              | System prefix (`$PREFIX`) — where packages like `python` are installed (viewable under superuser) |
 | `~/storage/shared` → `/storage/emulated/0/`    | Shared storage (Android internal storage)                           |
+| `~/projects/cron-jobs/`                         | Cron job scripts & metadata (scheduled tasks)                       |
 
 ---
 ## 🎨 Ambient Visuals (The "Wall-Mount" Mode)
@@ -92,7 +94,7 @@ This node hosts several foundational services and full-stack projects.
 | **SSH Daemon**        | Started via `sshd` for remote PC access                                    |
 | **Python Environment**| Python 3.x initialized                                                     |
 | **Process Monitoring**| `btop` (root-enabled). Path: `/data/data/com.termux/files/usr/bin/btop` (Type `su` first, then run absolute path) |
-| **Power Management**  | ACCA (Advanced Charging Controller) — battery bypass at 60% charge         |
+| **Power Management**  | ACCA (Advanced Charging Controller) — battery bypass at 60% charge (40-60)         |
 
 ### 🐘 PostgreSQL Database Service
 
@@ -151,6 +153,40 @@ A self-hosted LLM chat application built for **Android (Termux)**, powered by **
 
 ---
 
+## ⏰ Scheduled Tasks (Cron Jobs)
+
+Recurring tasks are managed by **`crond`** (from the `cronie` package), which reads the user's crontab and executes bash scripts on a defined schedule.
+
+### How It Works
+
+```
+crond (daemon) ──reads──▶ crontab (schedule file) ──triggers──▶ scripts (~/projects/cron-jobs/)
+```
+
+### Service Management
+
+| Action | Command |
+|---|---|
+| **Start** | `crond` |
+| **Stop** | `pkill crond` |
+| **Status** | `pgrep crond && echo "Running" \|\| echo "Not running"` |
+| **View jobs** | `crontab -l` |
+| **Edit jobs** | `crontab -e` |
+
+> [!NOTE]
+> `crond` is started automatically on boot via `~/.termux/boot/start-crond`.
+
+### Active Cron Jobs
+
+| Job | Schedule | Expression | Description |
+|---|---|---|---|
+| **Stand-Up Reminder** | Every hour, 8 AM – 10 PM | `0 8-22 * * *` | TTS voice alert reminding you to get up from your chair |
+
+> [!TIP]
+> Scripts, setup instructions, and Synapse integration context are in the [`cron-jobs/`](cron-jobs/) directory of this repository.
+
+---
+
 ## 🔑 Remote Access (SSH)
 
 ### Quick Connect
@@ -202,3 +238,10 @@ Set up SSH keys to skip the password prompt on every connection. *(Guide TBD)*
 
 > [!TIP]
 > If multiple scripts exist in `~/.termux/boot/`, they execute in **sorted (alphabetical) order**.
+
+### Active Boot Scripts
+
+| Script | Purpose |
+|---|---|
+| `start-sshd` | Acquires wake-lock and starts the SSH daemon |
+| `start-crond` | Starts the cron daemon for scheduled tasks |
